@@ -171,8 +171,8 @@ while(menu_num != 5):
         print("Menu 3")      
         #cap = cv2.VideoCapture(0)
 
-      with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
-        while cap.isOpened():
+        with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+          while cap.isOpened():
             ret, frame = cap.read()
 
             # Recolor image to RGB
@@ -214,9 +214,9 @@ while(menu_num != 5):
                                     )
 
                 # Sqaut counter logic
-                if (langle < 100 and rangle < 100)
+                if (langle < 130 and rangle < 130):
                     stage = "down"
-                if (langle > 150 and rangle > 150 and stage =='down'):
+                if (langle > 160 and rangle > 160 and stage =='down'):
                     stage = "up"
                     counter +=1
                     print(counter)
