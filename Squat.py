@@ -191,35 +191,37 @@ while(menu_num != 5):
                 landmarks = results.pose_landmarks.landmark
 
                 # Get coordinates
-                lshoulder= [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
-                lelbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
-                lwrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
+                lhip= [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x,landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
+                lknee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x,landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
+                lankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x,landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
 
-                rshoulder= [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
-                relbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
-                rwrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+                rhip= [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
+                rknee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
+                rankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
 
                 # Calculate angle
-                langle = int(calculate_angle(lshoulder, lelbow, lwrist))
-                rangle = int(calculate_angle(rshoulder, relbow, rwrist))
+                langle = int(calculate_angle(lhip, lknee, lankle))
+                rangle = int(calculate_angle(rhip, rknee, rankle))
                 # Visualize angle
                 cv2.putText(image, str(langle), 
-                               tuple(np.multiply(lelbow, [640, 480]).astype(int)), 
+                               tuple(np.multiply(lknee, [640, 480]).astype(int)), 
                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
                                     )
 
                 cv2.putText(image, str(rangle), 
-                               tuple(np.multiply(relbow, [640, 480]).astype(int)), 
+                               tuple(np.multiply(rknee, [640, 480]).astype(int)), 
                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
                                     )
 
                 # Sqaut counter logic
-                if (langle < 130 and rangle < 130):
+                if (langle < 120 and rangle < 120):
                     stage = "down"
+
                 if (langle > 160 and rangle > 160 and stage =='down'):
                     stage = "up"
                     counter +=1
                     print(counter)
+
 
             except:
                 pass
