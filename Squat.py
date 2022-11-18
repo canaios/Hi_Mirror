@@ -213,10 +213,10 @@ while(menu_num != 5):
                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
                                     )
 
-                # Curl counter logic
-                if (langle < 100 or rangle < 100)
+                # Sqaut counter logic
+                if (langle < 100 and rangle < 100)
                     stage = "down"
-                if (langle > 150 or rangle > 150 and stage =='down'):
+                if (langle > 150 and rangle > 150 and stage =='down'):
                     stage = "up"
                     counter +=1
                     print(counter)
@@ -259,6 +259,7 @@ while(menu_num != 5):
             if cv2.waitKey(10) & 0xFF == 27:
                 menu_num=0
                 break
+
     if (menu_num == 4) :
         print("Menu 4")
         cv2.imshow('MediaPipe Menu', image)
