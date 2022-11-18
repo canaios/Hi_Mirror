@@ -46,10 +46,10 @@ def menu_status(status):
             return " -"
         case 1: #덤벨
             return "Dumbell"
-        case 2: #Squat
+        case 2: #lunge
+            return "lunge"
+        case 3: #Squat
             return "Squat"
-        case 3: #Plank
-            return "Plank"
         case 4: #PushUp
             return "PushUp"
         case 5: #exit
@@ -160,8 +160,8 @@ while(menu_num != 5):
       
         
     if (menu_num == 1) :
-      print("Menu 1")
-      #cap = cv2.VideoCapture(0)
+       print("Menu 1")
+       cv2.imshow('MediaPipe Menu', image)
 
 
     if (menu_num == 2) :
@@ -170,7 +170,7 @@ while(menu_num != 5):
 
     if (menu_num == 3) :
         print("Menu 3")
-        cv2.imshow('MediaPipe Menu', image)
+        #cap = cv2.VideoCapture(0)
 
         with mp_pose.Pose(min_detection_confidence = 0.5, min_tracking_confidence = 0.5) as pose :
               while cap.isOpened() :
