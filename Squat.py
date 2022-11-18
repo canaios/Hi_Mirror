@@ -215,13 +215,16 @@ while(menu_num != 5):
                   )
 
                   # Squat counter logic
-                  if langle < 100:
-                     stage = "down"
 
-                  if (langle > 150 and stage == 'down') :
+                  if (langle < 100 or rangle < 100)
+                      stage = "down"
+                
+                  if (langle > 150 and stage =='down'):
                       stage = "up"
-                      counter += 1
+                      counter +=1
                       print(counter)
+
+               
 
 
                               except :
