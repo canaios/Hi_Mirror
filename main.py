@@ -1,6 +1,6 @@
 import cv2
 import sys
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 import mediapipe as mp
 import numpy as np  #배열지원
 import time
@@ -15,12 +15,17 @@ mp_pose = mp.solutions.pose #pose 측정
 
 window_pos_x = 240
 window_pos_y = 120
+window_width = 640
+window_height = 480
+capture_frame = 4
+
 # Select exercise menu
 menu_num = 0 
 menu_time = 10 #selecting time(window =30, rasp= )
 menu_num_count = 0
 menu_num_temp1 = 0
 menu_num_temp2 = 0
+
 # Curl counter variables
 counter = 0 
 lcounter=0
@@ -42,6 +47,8 @@ def initialize_var():
     stage1 = None
     stage2 = None
     stage = None
+    per = 0
+    bar = 0
     
 def calculate_angle(a,b,c):
     a = np.array(a) # First
@@ -55,18 +62,47 @@ def calculate_angle(a,b,c):
         angle = 360-angle
         
     return angle
-# menu
-menu_status = [" -","Dumbell","Squat","Plank","PushUp","Exit","--","--","--","--","--","--"]
 
+def menu_status(status):
+    match status:
+        case 0: #nothing
+            return " -"
+        case 1: #덤벨
+            return "Dumbell"
+        case 2: #lunge
+            return "lunge"
+        case 3: #Squat
+            return "Squat"
+        case 4: #PushUp
+            return "PushUp"
+        case 5: #exit
+            return "Exit"
+        case _: #default
+            return "--"
+
+def findPosition(image, draw=True):
+  lmList = []
+  if results.pose_landmarks:
+      mp_drawing.draw_landmarks(
+         image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+      for id, lm in enumerate(results.pose_landmarks.landmark):
+          h, w, c = image.shape
+          cx, cy = int(lm.x * w), int(lm.y * h)
+          lmList.append([id, cx, cy])
+          #cv2.circle(image, (cx, cy), 5, (255, 0, 0), cv2.FILLED)
+  return lmList
+
+'''
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(BUTTON_GPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 pressed = False      
+'''
 
 # For webcam input:
 cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-cap.set(cv2.CAP_PROP_FPS, 4)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, window_width)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, window_height)
+cap.set(cv2.CAP_PROP_FPS, capture_frame)
 
 while(menu_num != 5):
 
@@ -77,7 +113,7 @@ while(menu_num != 5):
         if not success:
           print("Ignoring empty camera frame.")
           continue
-        
+        '''
         # button is pressed when pin is LOW
         if not GPIO.input(BUTTON_GPIO):
             if not pressed:
@@ -89,6 +125,7 @@ while(menu_num != 5):
         # button not pressed (or released)
         else:
             pressed = False
+        '''
         
         # To improve performance, optionally mark the image as not writeable to pass by reference.
         image.flags.writeable = False
@@ -145,7 +182,7 @@ while(menu_num != 5):
         cv2.putText(image, str(fingerCount), (20,60), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
             
         cv2.putText(image, 'Menu', (200,12),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
-        cv2.putText(image, str(menu_status[fingerCount]),(150,60),cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
+        cv2.putText(image, str(menu_status(fingerCount)),(150,60),cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
             
         menu_num_temp1 = fingerCount
         menu_num_count += 1
@@ -161,12 +198,12 @@ while(menu_num != 5):
         print(menu_num)
         
         # Display image
-        cv2.namedWindow('MediaPipe Menu')
+        cv2.namedWindow('MediaPipe Menu', cv2.WND_PROP_FULLSCREEN)
+        cv2.setWindowProperty('MediaPipe Menu', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
         cv2.imshow('MediaPipe Menu', image)
-        cv2.moveWindow('MediaPipe Menu', window_pos_x, window_pos_y)
+        #cv2.moveWindow('MediaPipe Menu', window_pos_x, window_pos_y)
         
         if (cv2.waitKey(5) & 0xFF == 27) or (menu_num != 0):
-          #cv2.destroyAllWindows()
           menu_num_count = 0
           break
       
@@ -174,20 +211,13 @@ while(menu_num != 5):
         
     if (menu_num == 1) :
       print("Menu 1")
-      #cap = cv2.VideoCapture(0)
-
       with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
             ret, frame = cap.read()
             
-            # Recolor image to RGB
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             image.flags.writeable = False
-          
-            # Make detection
             results = pose.process(image)
-        
-            # Recolor back to BGR
             image.flags.writeable = True
             image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             
@@ -217,6 +247,13 @@ while(menu_num != 5):
                                tuple(np.multiply(relbow, [640, 480]).astype(int)), 
                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
                                     )
+
+                if langle < rangle:
+                    per = np.interp(langle, (10,170),(100,0))
+                    bar = np.interp(langle, (10,170),(100,0))
+                else :
+                    per = np.interp(rangle, (10,170),(100,0))
+                    bar = np.interp(rangle, (10,170),(100,0))
                 
                 # Curl counter logic
                 if langle > 152:
@@ -240,9 +277,16 @@ while(menu_num != 5):
 
             except:
                 pass
-
+            
+            # Percentage bar
+            cv2.rectangle(image, (40,300), (70,400), (255,255,255), cv2.FILLED)
+            cv2.rectangle(image, (40,400-int(bar)), (70,400), (130,45,216), cv2.FILLED)
+            cv2.rectangle(image, (40,300), (70, 400), (80,80,80), 3)
+            cv2.putText(image, f'{int(per)}%', (30,280),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.0, (80, 80,180), 3, cv2.LINE_AA)
+            
             # Setup status box
-            cv2.rectangle(image, (0,0), (350,73), (185,245,16), -1)
+            cv2.rectangle(image, (0,0), (350,73), (85,45,116), -1)
             
             # Rep data
             cv2.putText(image, 'Count', (15,12), 
@@ -266,7 +310,7 @@ while(menu_num != 5):
                                      )               
             
             cv2.imshow('MediaPipe Menu', image)
-            cv2.moveWindow('MediaPipe Menu',  window_pos_x, window_pos_y)
+            #cv2.moveWindow('MediaPipe Menu',  window_pos_x, window_pos_y)
         
             if cv2.waitKey(10) & 0xFF == ord('r'): #pose로 수정필요 
                 counter = 0
@@ -276,8 +320,8 @@ while(menu_num != 5):
             if cv2.waitKey(10) & 0xFF == 27:
                 menu_num=0
                 break
-                
-                        # button is pressed when pin is LOW
+                '''
+
             if not GPIO.input(BUTTON_GPIO):
                 if not pressed:
                     print("Button pressed in 1 !")
@@ -287,24 +331,292 @@ while(menu_num != 5):
             else:
                 pressed = False
         
-            
+            '''
     if (menu_num == 2) :
         print("Menu 2")
-        cv2.imshow('MediaPipe Menu', image)
+        
+        with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+            while cap.isOpened():
+                ret, frame = cap.read()
+
+                # Recolor image to RGB
+                image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                image.flags.writeable = False
+
+                # Make detection
+                results = pose.process(image)
+
+                # Recolor back to BGR
+                image.flags.writeable = True
+                image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+                # Extract landmarks
+                try:
+                    landmarks = results.pose_landmarks.landmark
+
+                    # Get coordinates
+                    lhip= [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x, landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
+                    lknee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
+                    lankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
+
+                    rhip= [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
+                    rknee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
+                    rankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x, landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
+
+
+                    # Calculate angle
+                    langle = int(calculate_angle(lhip, lknee, lankle))
+                    rangle = int(calculate_angle(rhip, rknee, rankle))
+
+                    # Visualize angle
+                    cv2.putText(image, str(langle), 
+                                   tuple(np.multiply(lknee, [640, 480]).astype(int)), 
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+                                )
+
+                    cv2.putText(image, str(rangle), 
+                                   tuple(np.multiply(rknee, [640, 480]).astype(int)), 
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+                                )
+
+                    # lunge counter logic
+                    if (langle > 140 and rangle > 140):
+                        stage1 = "left up"
+                        stage2 = "right up"
+                    if (langle < 110 and stage1 =='left up'):
+                        stage1="left down"
+                        stage = "left down"
+                        lcounter +=1
+                        counter = lcounter + rcounter
+                        print(counter)
+                    if (rangle < 110 and stage2 =='right up'):
+                        stage2="right down"
+                        stage = "right down"
+                        rcounter +=1
+                        counter = lcounter + rcounter
+                        print(counter)
+                    if (langle > 140) and (rangle > 140):
+                        stage = "up"
+
+                except:
+                    pass
+
+                # Setup status box
+                cv2.rectangle(image, (0,0), (350,73), (185,245,16), -1)
+
+                # Rep data
+                cv2.putText(image, 'Count', (15,12), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
+                cv2.putText(image, str(counter), 
+                            (10,60), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
+
+                # Stage data
+                cv2.putText(image, 'STAGE', (160,12), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
+                cv2.putText(image, stage, 
+                            (100,60), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
+
+
+                # Render detections
+                mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                        mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
+                                        mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2) 
+                                         )               
+
+                cv2.imshow('MediaPipe Menu', image)
+                #cv2.moveWindow('MediaPipe Menu',  window_pos_x, window_pos_y)
+
+                if cv2.waitKey(10) & 0xFF == ord('r'): #pose로 수정필요 
+                    counter = 0
+                    lcounter = 0
+                    rcounter = 0
+                    stage = "Reset"
+                if cv2.waitKey(10) & 0xFF == 27:
+                    menu_num=0
+                    break
+
 
     if (menu_num == 3) :
         print("Menu 3")
-        cv2.imshow('MediaPipe Menu', image)
+        with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+          while cap.isOpened():
+            ret, frame = cap.read()
+
+            # Recolor image to RGB
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image.flags.writeable = False
+
+            # Make detection
+            results = pose.process(image)
+
+            # Recolor back to BGR
+            image.flags.writeable = True
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+            # Extract landmarks
+            try:
+                landmarks = results.pose_landmarks.landmark
+
+                # Get coordinates
+                lhip= [landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].x,landmarks[mp_pose.PoseLandmark.LEFT_HIP.value].y]
+                lknee = [landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].x,landmarks[mp_pose.PoseLandmark.LEFT_KNEE.value].y]
+                lankle = [landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].x,landmarks[mp_pose.PoseLandmark.LEFT_ANKLE.value].y]
+
+                rhip= [landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_HIP.value].y]
+                rknee = [landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_KNEE.value].y]
+                rankle = [landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE.value].y]
+
+                # Calculate angle
+                langle = int(calculate_angle(lhip, lknee, lankle))
+                rangle = int(calculate_angle(rhip, rknee, rankle))
+                # Visualize angle
+                cv2.putText(image, str(langle), 
+                               tuple(np.multiply(lknee, [640, 480]).astype(int)), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+                                    )
+
+                cv2.putText(image, str(rangle), 
+                               tuple(np.multiply(rknee, [640, 480]).astype(int)), 
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+                                    )
+
+                # Sqaut counter logic
+                if (langle < 120 and rangle < 120):
+                    stage = "down"
+
+                if (langle > 160 and rangle > 160 and stage =='down'):
+                    stage = "up"
+                    counter +=1
+                    print(counter)
+
+
+            except:
+                pass
+
+            # Setup status box
+            cv2.rectangle(image, (0,0), (350,73), (185,245,16), -1)
+
+            # Rep data
+            cv2.putText(image, 'Count', (15,12), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
+            cv2.putText(image, str(counter), 
+                        (10,60), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
+
+            # Stage data
+            cv2.putText(image, 'STAGE', (160,12), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
+            cv2.putText(image, stage, 
+                        (100,60), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
+
+
+            # Render detections
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                    mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
+                                    mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2) 
+                                     )               
+
+            cv2.imshow('MediaPipe Menu', image)
+            #cv2.moveWindow('MediaPipe Menu',  window_pos_x, window_pos_y)
+
+            if cv2.waitKey(10) & 0xFF == ord('r'): #pose로 수정필요 
+                counter = 0
+                lcounter = 0
+                rcounter = 0
+                stage = "Reset"
+            if cv2.waitKey(10) & 0xFF == 27:
+                menu_num=0
+                break
 
     if (menu_num == 4) :
         print("Menu 4")
-        cv2.imshow('MediaPipe Menu', image)
+        with mp_pose.Pose(min_detection_confidence=0.7,
+            min_tracking_confidence=0.7) as pose:
 
-        
+          while cap.isOpened():
 
-############################################
+            success, image = cap.read()
+
+            image = cv2.resize(image, (640,480))
+
+            if not success:
+
+              print("Ignoring empty camera frame.")
+
+              # If loading a video, use 'break' instead of 'continue'.
+
+              continue
+
+            # Flip the image horizontally for a later selfie-view display, and convert
+
+            # the BGR image to RGB.
+
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+            # To improve performance, optionally mark the image as not writeable to
+
+            # pass by reference.
+
+            results = pose.process(image)
+
+            # Draw the pose annotation on the image.
+
+            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+            lmList = findPosition(image, draw=True)
+
+            if len(lmList) != 0:
+
+              cv2.circle(image, (lmList[12][1], lmList[12][2]), 20, (0, 0, 255), cv2.FILLED)
+
+              cv2.circle(image, (lmList[11][1], lmList[11][2]), 20, (0, 0, 255), cv2.FILLED)
+
+              cv2.circle(image, (lmList[12][1], lmList[12][2]), 20, (0, 0, 255), cv2.FILLED)
+
+              cv2.circle(image, (lmList[11][1], lmList[11][2]), 20, (0, 0, 255), cv2.FILLED)
+
+              if (lmList[12][2] and lmList[11][2] >= lmList[14][2] and lmList[13][2]):
+
+                cv2.circle(image, (lmList[12][1], lmList[12][2]), 20, (0, 255, 0), cv2.FILLED)
+
+                cv2.circle(image, (lmList[11][1], lmList[11][2]), 20, (0, 255, 0), cv2.FILLED)
+
+                stage = "down"
+
+              if (lmList[12][2] and lmList[11][2] <= lmList[14][2] and lmList[13][2]) and stage == "down":
+
+                stage = "up"
+
+                counter += 1
+
+                counter2 = str(int(counter))
+
+                print(counter)
+
+                os.system("echo '" + counter2 + "' | festival --tts")
+
+            text = "{}:{}".format("Push Ups", counter)
+
+            cv2.putText(image, text, (10, 40), cv2.FONT_HERSHEY_SIMPLEX,
+
+                        1, (255, 0, 0), 2)
+
+            cv2.imshow('MediaPipe Menu', image)
+
+            key = cv2.waitKey(1) & 0xFF
+
+            # if the `q` key was pressed, break from the loop
+
+            if key == ord("q"):
+
+              break
+
+
+
         
 #cap.release()
 #cv2.destroyAllWindows()
-#execute magic mirror
         
