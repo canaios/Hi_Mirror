@@ -11,6 +11,7 @@ import pyautogui
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_hands = mp.solutions.hands
+mp_hands = mp.solutions.hands
 mp_pose = mp.solutions.pose #pose 측정
 
 window_pos_x = 240
@@ -33,6 +34,7 @@ rcounter =0
 stage1 = None
 stage2 = None
 stage = None
+
 
 BUTTON_GPIO = 16
 
@@ -92,6 +94,10 @@ def findPosition(image, draw=True):
           #cv2.circle(image, (cx, cy), 5, (255, 0, 0), cv2.FILLED)
   return lmList
 
+                                
+
+
+
 '''
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(BUTTON_GPIO, GPIO.IN, pull_up_down=GPIO.PUD_UP)
@@ -110,6 +116,7 @@ while(menu_num != 5):
     with mp_hands.Hands(min_detection_confidence=0.5,min_tracking_confidence=0.5) as hands:
       while cap.isOpened():
         success, image = cap.read()
+        image = cv2.flip(image, 1)
         if not success:
           print("Ignoring empty camera frame.")
           continue
@@ -214,7 +221,7 @@ while(menu_num != 5):
       with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
         while cap.isOpened():
             ret, frame = cap.read()
-            
+            frame = cv2.flip(frame,1)
             image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             image.flags.writeable = False
             results = pose.process(image)
@@ -240,20 +247,29 @@ while(menu_num != 5):
                 # Visualize angle
                 cv2.putText(image, str(langle), 
                                tuple(np.multiply(lelbow, [640, 480]).astype(int)), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+                               cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 5, cv2.LINE_AA
                                     )
 
                 cv2.putText(image, str(rangle), 
-                               tuple(np.multiply(relbow, [640, 480]).astype(int)), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+                               tuple(np.multiply(relbow, [540, 480]).astype(int)), 
+                               cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 5, cv2.LINE_AA
+                                    )
+                cv2.putText(image, str(langle), 
+                               tuple(np.multiply(lelbow, [640, 480]).astype(int)), 
+                               cv2.FONT_HERSHEY_DUPLEX, 0.5, (20,20,20), 2, cv2.LINE_AA
+                                    )
+
+                cv2.putText(image, str(rangle), 
+                               tuple(np.multiply(relbow, [540, 480]).astype(int)), 
+                               cv2.FONT_HERSHEY_DUPLEX, 0.5, (20,20,20), 2, cv2.LINE_AA
                                     )
 
                 if langle < rangle:
-                    per = np.interp(langle, (10,170),(100,0))
-                    bar = np.interp(langle, (10,170),(100,0))
+                    per = np.interp(langle, (20,165),(100,0))
+                    bar = np.interp(langle, (15,165),(120,0))
                 else :
-                    per = np.interp(rangle, (10,170),(100,0))
-                    bar = np.interp(rangle, (10,170),(100,0))
+                    per = np.interp(rangle, (20,165),(100,0))
+                    bar = np.interp(rangle, (15,165),(120,0))
                 
                 # Curl counter logic
                 if langle > 152:
@@ -279,34 +295,53 @@ while(menu_num != 5):
                 pass
             
             # Percentage bar
-            cv2.rectangle(image, (40,300), (70,400), (255,255,255), cv2.FILLED)
-            cv2.rectangle(image, (40,400-int(bar)), (70,400), (130,45,216), cv2.FILLED)
-            cv2.rectangle(image, (40,300), (70, 400), (80,80,80), 3)
+            cv2.rectangle(image, (40,300), (70,420), (255,255,255), cv2.FILLED)
+            cv2.rectangle(image, (40,420-int(bar)), (70,420), (130,45,216), cv2.FILLED)
+            cv2.rectangle(image, (40,300), (70, 420), (120,120,120), 2)
             cv2.putText(image, f'{int(per)}%', (30,280),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1.0, (80, 80,180), 3, cv2.LINE_AA)
+                        cv2.FONT_HERSHEY_DUPLEX, 1.0, (255, 255,255), 16, cv2.LINE_AA)
+            cv2.putText(image, f'{int(per)}%', (30,280),
+                        cv2.FONT_HERSHEY_DUPLEX, 1.0, (80, 80,180), 3, cv2.LINE_AA)
+            
             
             # Setup status box
-            cv2.rectangle(image, (0,0), (350,73), (85,45,116), -1)
-            
+            cv2.rectangle(image, (0,0), (360,80), (85,45,116), -1)
+           
             # Rep data
-            cv2.putText(image, 'Count', (15,12), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
-            cv2.putText(image, str(counter), 
-                        (10,60), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
+            cv2.putText(image, 'COUNT', (15,23),
+                        cv2.FONT_HERSHEY_DUPLEX, 0.8, (0,0,0), 1, cv2.LINE_AA)
             
+            cv2.putText(image, str(counter), (15,63), 
+                        cv2.FONT_HERSHEY_DUPLEX, 1.5, (255,255,255), 2, cv2.LINE_AA)
+            '''
+            if counter <=20 and counter > 10:
+                
+                cv2.putText(image, str(counter), (15,63), 
+                            cv2.FONT_HERSHEY_DUPLEX, 1.5, (255,255,255), 6, cv2.LINE_AA)
+                cv2.putText(image, str(counter), (15,63), 
+                            cv2.FONT_HERSHEY_DUPLEX, 1.5, (255-counter*20,255,255), 2, cv2.LINE_AA)
+            if counter >20:
+                
+                cv2.putText(image, str(counter), (15,63), 
+                            cv2.FONT_HERSHEY_DUPLEX, 1.5, (255,255,255), 6, cv2.LINE_AA) 
+                cv2.putText(image, str(counter), (15,63), 
+                            cv2.FONT_HERSHEY_DUPLEX, 1.5, (255-counter*5,255-counter*5,255), 2, cv2.LINE_AA)
+            if counter <= 10:
+                cv2.putText(image, str(counter), (15,63), 
+                            cv2.FONT_HERSHEY_DUPLEX, 1.5, (255,255,255), 2, cv2.LINE_AA)
+            '''
             # Stage data
-            cv2.putText(image, 'STAGE', (160,12), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
+            cv2.putText(image, 'STAGE', (160,23), 
+                        cv2.FONT_HERSHEY_DUPLEX, 0.8, (0,0,0), 1, cv2.LINE_AA)
             cv2.putText(image, stage, 
-                        (100,60), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
+                        (160,63), 
+                        cv2.FONT_HERSHEY_DUPLEX, 1.5, (255,255,255), 2, cv2.LINE_AA)
             
             
             # Render detections
             mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
-                                    mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
-                                    mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2) 
+                                        mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
+                                        mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2) 
                                      )               
             
             cv2.imshow('MediaPipe Menu', image)
@@ -338,6 +373,7 @@ while(menu_num != 5):
         with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
             while cap.isOpened():
                 ret, frame = cap.read()
+                frame = cv2.flip(frame,1)
 
                 # Recolor image to RGB
                 image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -611,7 +647,7 @@ while(menu_num != 5):
             # if the `q` key was pressed, break from the loop
 
             if key == ord("q"):
-
+              menu_num=0
               break
 
 
