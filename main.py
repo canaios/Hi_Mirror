@@ -3,7 +3,7 @@ from collections import Counter
 from decimal import localcontext
 import cv2
 import sys
-#import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO
 import mediapipe as mp
 import numpy as np
 import time
