@@ -3,7 +3,7 @@ from collections import Counter
 from decimal import localcontext
 import cv2
 import sys
-import RPi.GPIO as GPIO
+#import RPi.GPIO as GPIO
 import mediapipe as mp
 import numpy as np
 import time
@@ -305,6 +305,7 @@ while(1):
             cv2.putText(image, f'{int(per)}%', (30,280),
                         cv2.FONT_HERSHEY_DUPLEX, 1.0, (80, 80,180), 3, cv2.LINE_AA)
             
+            
             # Setup status box
             cv2.rectangle(image, (0,0), (360,80), (85,45,116), -1)
            
@@ -357,6 +358,7 @@ while(1):
                 menu_num=0
                 break
                 '''
+
             if not GPIO.input(BUTTON_GPIO):
                 if not pressed:
                     print("Button pressed in 1 !")
@@ -374,9 +376,15 @@ while(1):
             while cap.isOpened():
                 ret, frame = cap.read()
                 frame = cv2.flip(frame,1)
+
+                # Recolor image to RGB
                 image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 image.flags.writeable = False
+
+                # Make detection
                 results = pose.process(image)
+
+                # Recolor back to BGR
                 image.flags.writeable = True
                 image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
@@ -409,46 +417,30 @@ while(1):
                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
                                 )
 
-                    if langle < rangle:
-                        per = np.interp(langle, (110,160),(100,0))
-                        bar = np.interp(langle, (100,160),(120,0))
-                    else :
-                        per = np.interp(rangle, (110,160),(100,0))
-                        bar = np.interp(rangle, (100,160),(120,0))
-
                     # lunge counter logic
-                    if (langle > 160 and rangle > 160):
-                        stage1 = "left down"
-                        stage2 = "right down"
-                    if (langle < 110 and stage1 =='left down'):
-                        stage1="left up"
-                        stage = "left up"
+                    if (langle > 140 and rangle > 140):
+                        stage1 = "left up"
+                        stage2 = "right up"
+                    if (langle < 110 and stage1 =='left up'):
+                        stage1="left down"
+                        stage = "left down"
                         lcounter +=1
                         counter = lcounter + rcounter
                         print(counter)
-                    if (rangle < 110 and stage2 =='right down'):
-                        stage2="right up"
-                        stage = "right up"
+                    if (rangle < 110 and stage2 =='right up'):
+                        stage2="right down"
+                        stage = "right down"
                         rcounter +=1
                         counter = lcounter + rcounter
                         print(counter)
-                    if (langle > 160) and (rangle > 160):
-                        stage = "down"
+                    if (langle > 140) and (rangle > 140):
+                        stage = "up"
 
                 except:
                     pass
 
-                # Percentage bar
-                cv2.rectangle(image, (40,300), (70,420), (255,255,255), cv2.FILLED)
-                cv2.rectangle(image, (40,420-int(bar)), (70,420), (130,45,216), cv2.FILLED)
-                cv2.rectangle(image, (40,300), (70, 420), (120,120,120), 2)
-                cv2.putText(image, f'{int(per)}%', (30,280),
-                        cv2.FONT_HERSHEY_DUPLEX, 1.0, (255, 255,255), 16, cv2.LINE_AA)
-                cv2.putText(image, f'{int(per)}%', (30,280),
-                        cv2.FONT_HERSHEY_DUPLEX, 1.0, (80, 80,180), 3, cv2.LINE_AA)
-
                 # Setup status box
-                cv2.rectangle(image, (0,0), (360,80), (255,216,0), -1)
+                cv2.rectangle(image, (0,0), (350,73), (185,245,16), -1)
 
                 # Rep data
                 cv2.putText(image, 'Count', (15,12), 
@@ -482,7 +474,6 @@ while(1):
                 if cv2.waitKey(10) & 0xFF == 27:
                     menu_num=0
                     break
-                
 
 
     if (menu_num == 3) :
@@ -689,4 +680,4 @@ while(1):
         
 #cap.release()
 #cv2.destroyAllWindows()
-      
+        
