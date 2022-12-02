@@ -1,138 +1,291 @@
 import cv2
-
 import mediapipe as mp
-
+import numpy as np  #배열지원
+import time
 import os
 
+#setup
 mp_drawing = mp.solutions.drawing_utils
+mp_drawing_styles = mp.solutions.drawing_styles
+mp_hands = mp.solutions.hands
+mp_pose = mp.solutions.pose #pose 측정
 
-mp_pose = mp.solutions.pose
+window_pos_x = 240
+window_pos_y = 120
 
-counter = 0
+menu_num = 0 # Select exercise menu
+menu_time = 30
+menu_num_count = 0
+menu_num_temp1 = 0
+menu_num_temp2 = 0
 
+counter = 0 # Curl counter variables
+lcounter= 0
+rcounter = 0
+stage1 = None
 stage = None
 
-create = None
+# angle func
+def calculate_angle(a,b,c):
+    a = np.array(a) # First
+    b = np.array(b) # Mid
+    c = np.array(c) # End
 
-opname = "output.avi"
+    radians = np.arctan2(c[1]-b[1], c[0]-b[0]) - np.arctan2(a[1]-b[1], a[0]-b[0])
+    angle = np.abs(radians*180.0/np.pi)
 
-def findPosition(image, draw=True):
+    if angle >180.0:
+        angle = 360-angle
 
-  lmList = []
+    return angle
+# menu func
+def menu_status(status):
+    match status:
+        case 0: #nothing
+            return " -"
+        case 1: #덤벨
+            return "Dumbell"
+        case 2: #lunge
+            return "lunge"
+        case 3: #Plank
+            return "Plank"
+        case 4: #PushUp
+            return "PushUp"
+        case 5: #exit
+            return "Exit"
+        case _: #default
+            return "--"
 
-  if results.pose_landmarks:
 
-      mp_drawing.draw_landmarks(
-
-         image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
-
-      for id, lm in enumerate(results.pose_landmarks.landmark):
-
-          h, w, c = image.shape
-
-          cx, cy = int(lm.x * w), int(lm.y * h)
-
-          lmList.append([id, cx, cy])
-
-          #cv2.circle(image, (cx, cy), 5, (255, 0, 0), cv2.FILLED)
-
-  return lmList
-
+# For webcam input:
 cap = cv2.VideoCapture(0)
 
-with mp_pose.Pose(
+while(menu_num != 5):
 
-    min_detection_confidence=0.7,
 
-    min_tracking_confidence=0.7) as pose:
+    # Select menu with hand
+    with mp_hands.Hands(
+        model_complexity=0,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5) as hands:
+      while cap.isOpened():
+        success, image = cap.read()
+        if not success:
+          print("Ignoring empty camera frame.") # If loading a video, use 'break' instead of 'continue'.
+          continue
 
-  while cap.isOpened():
+        # To improve performance, optionally mark the image as not writeable to pass by reference.
+        image.flags.writeable = False
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = hands.process(image)
+        image.flags.writeable = True
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
-    success, image = cap.read()
+        # Initially set finger count to 0 for menu select
+        fingerCount = 0
 
-    image = cv2.resize(image, (640,480))
+        if results.multi_hand_landmarks:
 
-    if not success:
+          for hand_landmarks in results.multi_hand_landmarks:
+            # Get hand index to check label (left or right)
+            handIndex = results.multi_hand_landmarks.index(hand_landmarks)
+            handLabel = results.multi_handedness[handIndex].classification[0].label
 
-      print("Ignoring empty camera frame.")
+            # Set variable to keep landmarks positions (x and y)
+            handLandmarks = []
 
-      # If loading a video, use 'break' instead of 'continue'.
+            # Fill list with x and y positions of each landmark
+            for landmarks in hand_landmarks.landmark:
+              handLandmarks.append([landmarks.x, landmarks.y])
 
-      continue
+            # Test conditions for each finger: Count is increased if finger isconsidered raised.
+            if handLabel == "Left" and handLandmarks[4][0] > handLandmarks[3][0]:
+              fingerCount = fingerCount+1
+            elif handLabel == "Right" and handLandmarks[4][0] < handLandmarks[3][0]:
+              fingerCount = fingerCount+1
 
-    # Flip the image horizontally for a later selfie-view display, and convert
+            # Other fingers: TIP y position must be lower than PIP y position as image origin is in the upper left corner.
+            if handLandmarks[8][1] < handLandmarks[6][1]:       #Index finger
+              fingerCount = fingerCount+1
+            if handLandmarks[12][1] < handLandmarks[10][1]:     #Middle finger
+              fingerCount = fingerCount+1
+            if handLandmarks[16][1] < handLandmarks[14][1]:     #Ring finger
+              fingerCount = fingerCount+1
+            if handLandmarks[20][1] < handLandmarks[18][1]:     #Pinky
+              fingerCount = fingerCount+1
 
-    # the BGR image to RGB.
+            # Draw hand landmarks 
+            mp_drawing.draw_landmarks(
+                image,
+                hand_landmarks,
+                mp_hands.HAND_CONNECTIONS,
+                mp_drawing_styles.get_default_hand_landmarks_style(),
+                mp_drawing_styles.get_default_hand_connections_style())
 
-    image = cv2.cvtColor(cv2.flip(image, 1), cv2.COLOR_BGR2RGB)
+        # Display menu
+        cv2.rectangle(image, (0,0), (400,73), (185,245,16), -1)
 
-    # To improve performance, optionally mark the image as not writeable to
+        cv2.putText(image, 'Select', (20,12), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
+        cv2.putText(image, str(fingerCount), (20,60), cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
 
-    # pass by reference.
+        cv2.putText(image, 'Menu', (200,12),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
+        cv2.putText(image, str(menu_status(fingerCount)),(150,60),cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
 
-    results = pose.process(image)
+        menu_num_temp1 = fingerCount
+        menu_num_count += 1
+        if(menu_num_count >= menu_time) :
+            menu_num_temp2 = fingerCount
+            menu_num_count = 0
 
-    # Draw the pose annotation on the image.
+        if(menu_num_temp1 == menu_num_temp2):
+            menu_num = fingerCount
+            menu_num_temp1 = 0
+            menu_num_temp2 = 0
+            menu_num_count = 0
 
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    lmList = findPosition(image, draw=True)
+        print(menu_num)
 
-    if len(lmList) != 0:
+        # Display image
+        cv2.namedWindow('MediaPipe Menu')
+        cv2.imshow('MediaPipe Menu', image)
+        cv2.moveWindow('MediaPipe Menu', window_pos_x, window_pos_y)
 
-      cv2.circle(image, (lmList[12][1], lmList[12][2]), 20, (0, 0, 255), cv2.FILLED)
+        if (cv2.waitKey(5) & 0xFF == 27) or (menu_num != 0):
+          #cv2.destroyAllWindows()
+          menu_num_count = 0
+          break
 
-      cv2.circle(image, (lmList[11][1], lmList[11][2]), 20, (0, 0, 255), cv2.FILLED)
+    if (menu_num == 1) :
+        print("Menu 1")
+        cv2.imshow('MediaPipe Menu', image)
 
-      cv2.circle(image, (lmList[12][1], lmList[12][2]), 20, (0, 0, 255), cv2.FILLED)
+    if (menu_num == 2) :
+        print("Menu 2")
+        cv2.imshow('MediaPipe Menu', image)
 
-      cv2.circle(image, (lmList[11][1], lmList[11][2]), 20, (0, 0, 255), cv2.FILLED)
+    if (menu_num == 3) :
+        print("Menu 3")
+        cv2.imshow('MediaPipe Menu', image)
 
-      if (lmList[12][2] and lmList[11][2] >= lmList[14][2] and lmList[13][2]):
+    if (menu_num == 4) :
+        print("Menu 4")
+        with mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5) as pose:
+          while cap.isOpened():
+            ret, frame = cap.read()
+            
+            frame = cv2.flip(frame,1)
+            image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            image.flags.writeable = False
+            results = pose.process(image)
+            image.flags.writeable = True
+            image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            
+            # Extract landmarks
+            try:
+                landmarks = results.pose_landmarks.landmark
+                
+                # Get coordinates
+                lshoulder= [landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER.value].y]
+                lelbow = [landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.LEFT_ELBOW.value].y]
+                lwrist = [landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.LEFT_WRIST.value].y]
 
-        cv2.circle(image, (lmList[12][1], lmList[12][2]), 20, (0, 255, 0), cv2.FILLED)
+                rshoulder= [landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER.value].y]
+                relbow = [landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW.value].y]
+                rwrist = [landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].x,landmarks[mp_pose.PoseLandmark.RIGHT_WRIST.value].y]
+                
+                # Calculate angle
+                langle = int(calculate_angle(lshoulder, lelbow, lwrist))
+                rangle = int(calculate_angle(rshoulder, relbow, rwrist))
+                # Visualize angle
+                cv2.putText(image, str(langle), 
+                               tuple(np.multiply(lelbow, [640, 480]).astype(int)), 
+                               cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 5, cv2.LINE_AA
+                                    )
 
-        cv2.circle(image, (lmList[11][1], lmList[11][2]), 20, (0, 255, 0), cv2.FILLED)
+                cv2.putText(image, str(rangle), 
+                               tuple(np.multiply(relbow, [540, 480]).astype(int)), 
+                               cv2.FONT_HERSHEY_DUPLEX, 0.5, (255, 255, 255), 5, cv2.LINE_AA
+                                    )
+                cv2.putText(image, str(langle), 
+                               tuple(np.multiply(lelbow, [640, 480]).astype(int)), 
+                               cv2.FONT_HERSHEY_DUPLEX, 0.5, (20,20,20), 2, cv2.LINE_AA
+                                    )
 
-        stage = "down"
+                cv2.putText(image, str(rangle), 
+                               tuple(np.multiply(relbow, [540, 480]).astype(int)), 
+                               cv2.FONT_HERSHEY_DUPLEX, 0.5, (20,20,20), 2, cv2.LINE_AA
+                                    )
+                if langle < rangle:
+                    per = np.interp(langle, (20,165),(100,0))
+                    bar = np.interp(langle, (15,165),(120,0))
+                else :
+                    per = np.interp(rangle, (20,165),(100,0))
+                    bar = np.interp(rangle, (15,165),(120,0))
+                
+                # Curl counter logic
+                if (langle < 80 and rangle < 80):
+                    stage = "down"
+                if langle > 170 and rangle > 170 and stage == 'down':
+                    stage = "up"
+                    counter[0] +=1
+                    print(counter[0])
 
-      if (lmList[12][2] and lmList[11][2] <= lmList[14][2] and lmList[13][2]) and stage == "down":
 
-        stage = "up"
+            except:
+                pass
+            
+            # Percentage bar
+            cv2.rectangle(image, (40,300), (70,420), (255,255,255), cv2.FILLED)
+            cv2.rectangle(image, (40,420-int(bar)), (70,420), (130,45,216), cv2.FILLED)
+            cv2.rectangle(image, (40,300), (70, 420), (120,120,120), 2)
+            cv2.putText(image, f'{int(per)}%', (30,280),
+                        cv2.FONT_HERSHEY_DUPLEX, 1.0, (255, 255,255), 16, cv2.LINE_AA)
+            cv2.putText(image, f'{int(per)}%', (30,280),
+                        cv2.FONT_HERSHEY_DUPLEX, 1.0, (80, 80,180), 3, cv2.LINE_AA)
+            
+            # Setup status box
+            cv2.rectangle(image, (0,0), (360,80), (85,45,116), -1)
+           
+            # Rep data
+            cv2.putText(image, 'COUNT', (15,23),
+                        cv2.FONT_HERSHEY_DUPLEX, 0.8, (0,0,0), 1, cv2.LINE_AA)
+            
+            cv2.putText(image, str(counter[0]), (15,63), 
+                        cv2.FONT_HERSHEY_DUPLEX, 1.5, (255,255,255), 2, cv2.LINE_AA)
+            # Stage data
+            cv2.putText(image, 'STAGE', (160,23), 
+                        cv2.FONT_HERSHEY_DUPLEX, 0.8, (0,0,0), 1, cv2.LINE_AA)
+            cv2.putText(image, stage, 
+                        (160,63), 
+                        cv2.FONT_HERSHEY_DUPLEX, 1.5, (255,255,255), 2, cv2.LINE_AA)
+            
+            
+            # Render detections
+            mp_drawing.draw_landmarks(image, results.pose_landmarks, mp_pose.POSE_CONNECTIONS,
+                                        mp_drawing.DrawingSpec(color=(245,117,66), thickness=2, circle_radius=2), 
+                                        mp_drawing.DrawingSpec(color=(245,66,230), thickness=2, circle_radius=2) 
+                                     )               
+                
+            cv2.namedWindow('MediaPipe Menu', cv2.WND_PROP_FULLSCREEN)
+            cv2.setWindowProperty('MediaPipe Menu', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+            cv2.imshow('MediaPipe Menu', image)
+            #cv2.moveWindow('MediaPipe Menu',  window_pos_x, window_pos_y)
+        
+            if cv2.waitKey(10) & 0xFF == ord('r'): #pose로 수정필요 
+                counter[3] = 0
+                lcounter[3] = 0
+                rcounter[3] = 0
+                stage = "Reset"
+            if cv2.waitKey(10) & 0xFF == 27:
+                menu_num=0
+                ex_count[3] = counter[3] #also need to change GPIO
+                break
 
-        counter += 1
 
-        counter2 = str(int(counter))
 
-        print(counter)
+############################################
 
-        os.system("echo '" + counter2 + "' | festival --tts")
-
-    text = "{}:{}".format("Push Ups", counter)
-
-    cv2.putText(image, text, (10, 40), cv2.FONT_HERSHEY_SIMPLEX,
-
-                1, (255, 0, 0), 2)
-
-    cv2.imshow('MediaPipe Pose', image)
-
-    if create is None:
-
-      fourcc = cv2.VideoWriter_fourcc(*'XVID')
-
-      create = cv2.VideoWriter(opname, fourcc, 30, (image.shape[1], image.shape[0]), True)
-
-    create.write(image)
-
-    key = cv2.waitKey(1) & 0xFF
-
-    # if the `q` key was pressed, break from the loop
-
-    if key == ord("q"):
-
-      break
-
-    # do a bit of cleanup
-
-cv2.destroyAllWindows()
-
+#cap.release()
+#cv2.destroyAllWindows()
+#execute magic mirror
