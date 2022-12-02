@@ -700,6 +700,7 @@ while(1):
             else:
                 pressed = False
         '''
+        
     if (menu_num == 5) :
         result_x = 120
         result_y = [0,0,0,0]
