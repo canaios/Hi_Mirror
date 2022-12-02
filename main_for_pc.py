@@ -392,52 +392,50 @@ while(1):
 
                     # lunge counter logic
                     if (langle > 160 and rangle > 160):
+                        stage1 = "left up"
+                        stage2 = "right up"
+                    if (langle < 110 and stage1 =='left up'):
                         stage1 = "left down"
-                        stage2 = "right down"
-                    if (langle < 110 and stage1 =='left down'):
-                        stage1="left up"
-                        stage = "left up"
+                        stage  = "left down"
                         lcounter[1] +=1
                         counter[1] = lcounter[1] + rcounter[1]
                         print(counter[1])
-                    if (rangle < 110 and stage2 =='right down'):
-                        stage2="right up"
-                        stage = "right up"
+                    if (rangle < 110 and stage2 =='right up'):
+                        stage2 = "right down"
+                        stage  = "right down"
                         rcounter[1] +=1
                         counter[1] = lcounter[1] + rcounter[1]
                         print(counter[1])
                     if (langle > 160) and (rangle > 160):
-                        stage = "down"
+                        stage = "up"
 
                 except:
                     pass
 
                 # Percentage bar
                 cv2.rectangle(image, (40,300), (70,420), (255,255,255), cv2.FILLED)
-                
-                cv2.rectangle(image, (40,420-int(bar2)), (70,420), (130,45,216), cv2.FILLED)
+                cv2.rectangle(image, (40,420-int(bar2)), (70,420), (255,0,1), cv2.FILLED)
                 cv2.rectangle(image, (40,300), (70, 420), (120,120,120), 2)
                 cv2.putText(image, f'{int(per)}%', (30,280),
-                        cv2.FONT_HERSHEY_DUPLEX, 1.0, (255, 255,255), 16, cv2.LINE_AA)
+                        cv2.FONT_HERSHEY_DUPLEX, 1.0, (255,255,255), 16, cv2.LINE_AA)
                 cv2.putText(image, f'{int(per)}%', (30,280),
-                        cv2.FONT_HERSHEY_DUPLEX, 1.0, (80, 80,180), 3, cv2.LINE_AA)
+                        cv2.FONT_HERSHEY_DUPLEX, 1.0, (255,216,0), 3, cv2.LINE_AA)
 
                 # Setup status box
                 cv2.rectangle(image, (0,0), (360,80), (255,216,0), -1)
 
                 # Rep data
-                cv2.putText(image, 'Count', (15,12), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
+                cv2.putText(image, 'Count', (15,23), 
+                            cv2.FONT_HERSHEY_DUPLEX, 0.8, (0,0,0), 1, cv2.LINE_AA)
                 cv2.putText(image, str(counter[1]), 
-                            (10,60), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
+                            (15,63), 
+                            cv2.FONT_HERSHEY_DUPLEX, 1.5, (255,255,255), 2, cv2.LINE_AA)
 
                 # Stage data
-                cv2.putText(image, 'STAGE', (160,12), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 1, cv2.LINE_AA)
-                cv2.putText(image, stage, 
-                            (100,60), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 2, (255,255,255), 2, cv2.LINE_AA)
+                cv2.putText(image, 'STAGE', (160,23), 
+                            cv2.FONT_HERSHEY_DUPLEX, 0.8, (0,0,0), 1, cv2.LINE_AA)
+                cv2.putText(image, stage, (160,63), 
+                            cv2.FONT_HERSHEY_DUPLEX, 1.5, (255,255,255), 2, cv2.LINE_AA)
 
 
                 # Render detections
