@@ -504,13 +504,21 @@ while(1):
                 # Visualize angle
                 cv2.putText(image, str(langle), 
                                tuple(np.multiply(lknee, [640, 480]).astype(int)), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 5, cv2.LINE_AA
                                     )
 
                 cv2.putText(image, str(rangle), 
                                tuple(np.multiply(rknee, [640, 480]).astype(int)), 
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA
+                               cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 5, cv2.LINE_AA
                                     )
+
+                if langle < rangle:
+                    per = np.interp(langle, (110,160),(100,0))
+                    bar2 = np.interp(langle, (100,160),(120,0))
+                else :
+                    per = np.interp(rangle, (110,160),(100,0))
+                    bar2 = np.interp(rangle, (100,160),(120,0))
+
 
                 # Sqaut counter logic
                 if (langle < 120 and rangle < 120):
@@ -524,9 +532,18 @@ while(1):
 
             except:
                 pass
-
+            
+            # Percentage bar
+            cv2.rectangle(image, (40,300), (70,420), (255,255,255), cv2.FILLED)
+            cv2.rectangle(image, (40,420-int(bar2)), (70,420), (0,187,255), cv2.FILLED)
+            cv2.rectangle(image, (40,300), (70, 420), (120,120,120), 2)
+            cv2.putText(image, f'{int(per)}%', (30,280),
+                    cv2.FONT_HERSHEY_DUPLEX, 1.0, (255,255,255), 16, cv2.LINE_AA)
+            cv2.putText(image, f'{int(per)}%', (30,280),
+                    cv2.FONT_HERSHEY_DUPLEX, 1.0, (0,187,255), 3, cv2.LINE_AA)
+            
             # Setup status box
-            cv2.rectangle(image, (0,0), (350,73), (185,245,16), -1)
+            cv2.rectangle(image, (0,0), (350,73), (0,151,219), -1)
 
             # Rep data
             cv2.putText(image, 'Count', (15,12), 
