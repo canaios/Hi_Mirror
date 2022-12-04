@@ -554,14 +554,14 @@ while(1):
             cv2.imshow('MediaPipe Menu', image)
 
             if cv2.waitKey(10) & 0xFF == ord('r'): #pose로 수정필요 
-                counter = 0
-                lcounter = 0
-                rcounter = 0
+                counter[2] = 0
+                lcounter[2] = 0
+                rcounter[2] = 0
                 stage = "Reset"
                 
             if cv2.waitKey(10) & 0xFF == 27:
                 menu_num=0
-                ex_count[2] = counter
+                ex_count[2] = counter[2]
 
                 break
                 '''
@@ -635,8 +635,8 @@ while(1):
                     stage = "down"
                 if langle > 170 and rangle > 170 and stage == 'down':
                     stage = "up"
-                    counter[0] +=1
-                    print(counter[0])
+                    counter[3] +=1
+                    print(counter[3])
 
 
             except:
