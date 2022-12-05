@@ -84,7 +84,6 @@ cv2.namedWindow('MediaPipe Menu', cv2.WND_PROP_FULLSCREEN)
 cv2.setWindowProperty('MediaPipe Menu', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 #cap.set(cv2.CAP_PROP_FRAME_WIDTH, window_width)
 #cap.set(cv2.CAP_PROP_FRAME_HEIGHT, window_height)
-cap = cv2.resize(cap,dsize=(900,1600),interpolation = cv2.INTER_CUBIC)
 cap.set(cv2.CAP_PROP_FPS, capture_frame)
 
 while(1):
@@ -585,7 +584,7 @@ while(1):
                     break
             # button not pressed (or released)
             else:
-            pressed = False       
+                pressed = False       
                     
     if (menu_num == 4) :
       print("Menu 4")
