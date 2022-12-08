@@ -42,7 +42,7 @@ stage = None
 BUTTON_GPIO = 16
 mpbreak = 0
 def initialize_var():
-    global menu_num, menu_num_count, menu_num_temp1, menu_num_temp2,counter,lcounter, rcounter, stage1, stage2, stage, per, bar
+    global menu_num, menu_num_count, menu_num_temp1, menu_num_temp2,counter,lcounter, rcounter, stage1, stage2, stage, per, bar, bar2
     menu_num = 0 
     menu_num_count = 0
     menu_num_temp1 = 0
@@ -55,6 +55,7 @@ def initialize_var():
     stage = None
     per = 0
     bar = 0
+    bar2 = 0
     
 def calculate_angle(a,b,c):
     a = np.array(a) # First
