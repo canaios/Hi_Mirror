@@ -1,3 +1,3 @@
 # Hi_Mirror
 # 캡스톤2
-[Hi, Mirror 포스터.PDF](https://github.com/woojinchoi17/Hi_Mirror/files/10365843/Hi.Mirror.PDF)
+![111](https://user-images.githubusercontent.com/94155642/211142434-d2e59289-2e98-4f44-8015-b9238b5f49c6.PNG)
